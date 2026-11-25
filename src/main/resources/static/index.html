@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic Backend – Live Demo</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --border: #334155;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        header h1 {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+        }
+
+        .dot.connected { background: var(--success); }
+
+        main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        #chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        #messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .msg {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+        }
+
+        .msg.user {
+            align-self: flex-end;
+            background: var(--primary);
+            color: white;
+        }
+
+        .msg.bot {
+            align-self: flex-start;
+            background: var(--card);
+            border: 1px solid var(--border);
+        }
+
+        .msg.system {
+            align-self: center;
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.8rem;
+            border: none;
+        }
+
+        .msg.approval {
+            align-self: flex-start;
+            background: #422006;
+            border: 1px solid var(--warning);
+            max-width: 90%;
+        }
+
+        .metrics {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+        }
+
+        .approval-actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .approval-actions button {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .btn-approve { background: var(--success); color: white; }
+        .btn-reject  { background: var(--danger); color: white; }
+
+        #input-area {
+            padding: 16px 24px;
+            background: var(--card);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+        }
+
+        #goal {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        #goal:focus { border-color: var(--primary); }
+
+        #send {
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #send:hover { background: var(--primary-hover); }
+        #send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .sidebar {
+            width: 280px;
+            background: var(--card);
+            border-left: 1px solid var(--border);
+            padding: 20px;
+            font-size: 0.85rem;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .info-row span:last-child {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .step {
+            background: var(--bg);
+            border-radius: 6px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+        }
+
+        .step .agent { color: var(--primary); font-weight: 600; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Agentic Backend – Live Demo</h1>
+    <div class="status">
+        <div class="dot" id="dot"></div>
+        <span id="conn-status">Disconnected</span>
+    </div>
+</header>
+
+<main>
+    <div id="chat">
+        <div id="messages"></div>
+        <div id="input-area">
+            <input type="text" id="goal" placeholder="Enter your goal... e.g. Research Spring Boot 3.4 features and write a summary" autofocus>
+            <button id="send">Send</button>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <h3>Session</h3>
+        <div class="info-row"><span>Conversation ID</span><span id="conv-id">–</span></div>
+        <div class="info-row"><span>Status</span><span id="last-status">–</span></div>
+        <div class="info-row"><span>Total Latency</span><span id="total-latency">–</span></div>
+
+        <h3 style="margin-top: 24px;">Steps</h3>
+        <div id="steps"></div>
+    </div>
+</main>
+
+<script>
+    const wsUrl = `ws://${location.host}/ws/chat`;
+    let socket;
+    let conversationId = null;
+    let pendingApproval = null;
+
+    const messagesEl = document.getElementById('messages');
+    const goalInput = document.getElementById('goal');
+    const sendBtn = document.getElementById('send');
+    const dot = document.getElementById('dot');
+    const connStatus = document.getElementById('conn-status');
+
+    function connect() {
+        socket = new WebSocket(wsUrl);
+
+        socket.onopen = () => {
+            dot.classList.add('connected');
+            connStatus.textContent = 'Connected';
+            addSystem('Connected to WebSocket');
+        };
+
+        socket.onclose = () => {
+            dot.classList.remove('connected');
+            connStatus.textContent = 'Disconnected';
+            addSystem('Disconnected. Reconnecting in 3s...');
+            setTimeout(connect, 3000);
+        };
+
+        socket.onerror = () => {
+            addSystem('WebSocket error');
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            if (data.type === 'status') {
+                addSystem(data.content);
+            }
+            else if (data.type === 'token') {
+                appendToken(data.content);
+            }
+            else if (data.type === 'result') {
+                handleResult(data.data);
+            }
+            else if (data.type === 'done') {
+                sendBtn.disabled = false;
+            }
+        };
+    }
+
+    function handleResult(result) {
+        conversationId = result.conversationId;
+        document.getElementById('conv-id').textContent = conversationId.substring(0, 8) + '...';
+        document.getElementById('last-status').textContent = result.status;
+        document.getElementById('total-latency').textContent = result.totalLatencyMs + ' ms';
+
+        // Render steps
+        const stepsEl = document.getElementById('steps');
+        stepsEl.innerHTML = '';
+        if (result.steps) {
+            result.steps.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'step';
+                div.innerHTML = `<span class="agent">${s.agent}</span> · ${s.latencyMs}ms · conf ${(s.confidence * 100).toFixed(0)}%`;
+                stepsEl.appendChild(div);
+            });
+        }
+
+        if (result.status === 'NEEDS_APPROVAL') {
+            pendingApproval = result;
+            const div = document.createElement('div');
+            div.className = 'msg approval';
+            div.innerHTML = `
+                <strong>Human Approval Required</strong><br>
+                Confidence: ${(result.confidence * 100).toFixed(0)}%<br>
+                Suggested: ${result.pendingInstruction || '–'}
+                <div class="approval-actions">
+                    <button class="btn-approve" onclick="approve(true)">Approve</button>
+                    <button class="btn-reject" onclick="approve(false)">Reject</button>
+                </div>
+            `;
+            messagesEl.appendChild(div);
+        } else if (result.status === 'COMPLETED') {
+            // Result already streamed via tokens, just add metrics
+            const lastBot = messagesEl.querySelector('.msg.bot:last-child');
+            if (lastBot) {
+                const metrics = document.createElement('div');
+                metrics.className = 'metrics';
+                metrics.textContent = `Latency: ${result.totalLatencyMs}ms · Steps: ${result.steps?.length || 0}`;
+                lastBot.appendChild(metrics);
+            }
+        } else {
+            addBot(result.result || result.status);
+        }
+
+        scrollToBottom();
+    }
+
+    function approve(approved) {
+        if (!pendingApproval) return;
+        socket.send(JSON.stringify({
+            type: 'approve',
+            conversationId: pendingApproval.conversationId,
+            approved: approved,
+            modifiedInstruction: null
+        }));
+        pendingApproval = null;
+        addSystem(approved ? 'Approved – continuing...' : 'Rejected by human');
+    }
+
+    function send() {
+        const goal = goalInput.value.trim();
+        if (!goal) return;
+
+        addUser(goal);
+        goalInput.value = '';
+        sendBtn.disabled = true;
+
+        // Start a new bot message container for streaming tokens
+        const botMsg = document.createElement('div');
+        botMsg.className = 'msg bot';
+        botMsg.id = 'streaming';
+        messagesEl.appendChild(botMsg);
+
+        socket.send(JSON.stringify({
+            type: 'chat',
+            goal: goal,
+            conversationId: conversationId
+        }));
+    }
+
+    function appendToken(token) {
+        let el = document.getElementById('streaming');
+        if (!el) {
+            el = document.createElement('div');
+            el.className = 'msg bot';
+            el.id = 'streaming';
+            messagesEl.appendChild(el);
+        }
+        el.textContent += token;
+        scrollToBottom();
+    }
+
+    function addUser(text) {
+        const div = document.createElement('div');
+        div.className = 'msg user';
+        div.textContent = text;
+        messagesEl.appendChild(div);
+        // Remove previous streaming id
+        const old = document.getElementById('streaming');
+        if (old) old.removeAttribute('id');
+        scrollToBottom();
+    }
+
+    function addBot(text) {
+        const div = document.createElement('div');
+        div.className = 'msg bot';
+        div.textContent = text;
+        messagesEl.appendChild(div);
+        scrollToBottom();
+    }
+
+    function addSystem(text) {
+        const div = document.createElement('div');
+        div.className = 'msg system';
+        div.textContent = text;
+        messagesEl.appendChild(div);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    sendBtn.addEventListener('click', send);
+    goalInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') send();
+    });
+
+    connect();
+</script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+server:
+  port: 8080
+
+# ====================== Model Provider ======================
+ai:
+  provider: ${AI_PROVIDER:ollama}   # openai | ollama
+
+openai:
+  api-key: ${OPENAI_API_KEY:sk-your-key-here}
+  model: gpt-4o-mini
+
+ollama:
+  base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+  model: ${OLLAMA_MODEL:qwen2.5:14b}
+  # model: ${OLLAMA_MODEL:llama3.1:8b}  llama3.2
+
+
+# ====================== Vector Store ======================
+# Options: memory | qdrant | pgvector
+vector-store:
+  type: ${VECTOR_STORE_TYPE:memory}
+
+  qdrant:
+    host: ${QDRANT_HOST:localhost}
+    port: ${QDRANT_PORT:6333}
+    collection: ${QDRANT_COLLECTION:knowledge-base}
+
+  pgvector:
+    host: ${PGVECTOR_HOST:localhost}
+    port: ${PGVECTOR_PORT:5432}
+    database: ${PGVECTOR_DB:agentic}
+    user: ${PGVECTOR_USER:postgres}
+    password: ${PGVECTOR_PASSWORD:postgres}
+    table: ${PGVECTOR_TABLE:embeddings}
+    dimension: 384   # all-MiniLM-L6-v2 dimension
+
+# ====================== Agent Settings ======================
+agent:
+  confidence-threshold: 0.72
+  max-steps: 4
+  human-in-the-loop: true
+
+# ====================== Actuator ======================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.example.agentic: INFO
+    root: INFO
